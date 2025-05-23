@@ -1,4 +1,4 @@
-package com.planner;
+package com.planner.model;
 
 public class User {
     private int id;
