@@ -1,127 +1,137 @@
 package com.planner.view;
 
-import com.planner.db.TaskDAO;
+import com.planner.model.User;
 import com.planner.model.Task;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import com.planner.db.TaskDAO;
+import com.planner.util.OllamaClient;
+
+import javafx.geometry.*;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.util.Duration;
+
+import java.sql.Connection;
 import java.util.List;
 
 public class MainView {
     private final VBox root;
-    private final TaskDAO taskDAO;
     private final VBox taskList;
+    private final Connection conn;
+    private final User user;
+    private final TaskDAO taskDAO;
     private Timeline timer;
-    private int remainingSeconds = 1500; // 25 minutes
     private Label timerLabel;
+    private int remainingSeconds = 25 * 60; // 25 phút
 
-    public MainView() {
-        taskDAO = new TaskDAO();
-        root = new VBox(20);
+    public MainView(Connection conn, User user) {
+        this.conn = conn;
+        this.user = user;
+        this.taskDAO = new TaskDAO(conn);
+        this.root = new VBox(20);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
 
-        // Title
-        Text title = new Text("Pomodoro Study Planner");
-        title.setStyle("-fx-font-size: 24; -fx-font-weight: bold;");
+        // Header
+        Label welcome = new Label("👋 Hi " + user.getUsername());
+        welcome.setStyle("-fx-font-size: 18; -fx-font-weight: bold;");
 
-        Text subtitle = new Text("Personalized study plan");
-        subtitle.setStyle("-fx-font-size: 14;");
-
-        // Timer
+        // Pomodoro timer
         timerLabel = new Label(formatTime(remainingSeconds));
         timerLabel.setStyle("-fx-font-size: 36; -fx-font-weight: bold;");
+        Button start = new Button("Start");
+        Button stop = new Button("Stop");
+        Button reset = new Button("Reset");
 
-        Button startButton = new Button("Start");
-        Button stopButton = new Button("Stop");
-        Button resetButton = new Button("Reset");
+        start.setOnAction(e -> startTimer());
+        stop.setOnAction(e -> stopTimer());
+        reset.setOnAction(e -> resetTimer());
 
-        startButton.setOnAction(e -> startTimer());
-        stopButton.setOnAction(e -> stopTimer());
-        resetButton.setOnAction(e -> resetTimer());
-
-        HBox timerBox = new HBox(10, timerLabel, startButton, stopButton, resetButton);
+        HBox timerBox = new HBox(10, timerLabel, start, stop, reset);
         timerBox.setAlignment(Pos.CENTER);
 
-        // Task List
-        taskList = new VBox(15);
-        taskList.setAlignment(Pos.CENTER);
-        refreshTaskList();
-
-        // Add Task Form
-        TextField taskField = new TextField();
-        taskField.setPromptText("Task name");
-        taskField.setMaxWidth(300);
+        // Task input
+        TextField titleField = new TextField();
+        titleField.setPromptText("Task title");
 
         TextField durationField = new TextField();
         durationField.setPromptText("Duration (minutes)");
-        durationField.setMaxWidth(300);
 
-        Button addTaskButton = new Button("Add Task");
-        addTaskButton.setOnAction(e -> {
-            String titleText = taskField.getText();
-            int minutes;
+        Button addTask = new Button("Add Task");
+        addTask.setOnAction(e -> {
             try {
-                minutes = Integer.parseInt(durationField.getText());
-            } catch (NumberFormatException ex) {
-                showAlert("Invalid duration. Please enter a number.");
-                return;
+                String title = titleField.getText();
+                int mins = Integer.parseInt(durationField.getText());
+                Task task = new Task(0, title, mins, user.getId());
+                taskDAO.addTask(task);
+                titleField.clear();
+                durationField.clear();
+                refreshTaskList();
+            } catch (Exception ex) {
+                showAlert("Invalid input.");
             }
-            Task task = new Task(0, titleText, minutes);
-            taskDAO.addTask(task);
-            taskField.clear();
-            durationField.clear();
-            refreshTaskList();
         });
 
-        VBox inputBox = new VBox(10, taskField, durationField, addTaskButton);
+        VBox inputBox = new VBox(8, titleField, durationField, addTask);
         inputBox.setAlignment(Pos.CENTER);
 
-        root.getChildren().addAll(title, subtitle, timerBox, taskList, inputBox);
-    }
+        // Task list
+        taskList = new VBox(10);
+        taskList.setAlignment(Pos.CENTER_LEFT);
+        refreshTaskList();
 
-    public VBox getRoot() {
-        return root;
+        // AI Study Tip
+        Button tipButton = new Button("AI Study tips");
+        tipButton.setOnAction(e -> {
+            try {
+                String tip = OllamaClient.getStudyTip();
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, tip);
+                alert.setTitle("Study tips");
+                alert.setHeaderText(null);
+                alert.show();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showAlert("AI error: " + ex.getMessage());
+            }
+        });
+
+
+        root.getChildren().addAll(welcome, timerBox, inputBox, taskList, tipButton);
     }
 
     private void refreshTaskList() {
         taskList.getChildren().clear();
-        List<Task> tasks = taskDAO.getAllTasks();
+        List<Task> tasks = taskDAO.getTasksByUserId(user.getId());
+
         for (Task t : tasks) {
-            HBox taskBox = new HBox(30);
-            taskBox.setAlignment(Pos.CENTER);
-            taskBox.setStyle("-fx-border-color: black; -fx-padding: 10; -fx-background-color: #fff;");
+            CheckBox checkbox = new CheckBox(t.getTitle() + " – " + t.getDurationMinutes() + " minutes");
+            checkbox.setSelected(t.isDone());
 
-            Label name = new Label(t.getTitle());
-            name.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+            checkbox.setOnAction(e -> {
+                taskDAO.setTaskDone(t.getId(), checkbox.isSelected());
+            });
 
-            Label duration = new Label(t.getDurationMinutes() + " min");
-            duration.setStyle("-fx-font-size: 16;");
-
-            Button deleteButton = new Button("Delete");
-            deleteButton.setOnAction(e -> {
+            Button deleteBtn = new Button("Delete");
+            deleteBtn.setOnAction(e -> {
                 taskDAO.deleteTask(t.getId());
                 refreshTaskList();
             });
 
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
-
-            taskBox.getChildren().addAll(name, spacer, duration, deleteButton);
-            taskList.getChildren().add(taskBox);
+            HBox row = new HBox(10, checkbox, deleteBtn);
+            row.setAlignment(Pos.CENTER_LEFT);
+            taskList.getChildren().add(row);
         }
+
     }
 
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Input Error");
+        alert.setTitle("Error");
         alert.setContentText(msg);
-        alert.showAndWait();
+        alert.show();
     }
 
     private void startTimer() {
@@ -131,7 +141,7 @@ public class MainView {
                 remainingSeconds--;
                 timerLabel.setText(formatTime(remainingSeconds));
             } else {
-                timer.stop();
+                stopTimer();
             }
         }));
         timer.setCycleCount(Timeline.INDEFINITE);
@@ -144,13 +154,23 @@ public class MainView {
 
     private void resetTimer() {
         stopTimer();
-        remainingSeconds = 1500;
+        remainingSeconds = 25 * 60;
         timerLabel.setText(formatTime(remainingSeconds));
     }
 
-    private String formatTime(int totalSeconds) {
-        int minutes = totalSeconds / 60;
-        int seconds = totalSeconds % 60;
-        return String.format("%02d:%02d", minutes, seconds);
+    private String formatTime(int sec) {
+        return String.format("%02d:%02d", sec / 60, sec % 60);
+    }
+
+    public VBox getRoot() {
+        return root;
+    }
+
+    public void show() {
+        Stage stage = new Stage();
+        Scene scene = new Scene(getRoot(), 600, 500);
+        stage.setScene(scene);
+        stage.setTitle("Pomodoro Study Planner");
+        stage.show();
     }
 }

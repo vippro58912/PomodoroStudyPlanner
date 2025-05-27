@@ -2,16 +2,16 @@ package com.planner.view;
 
 import com.planner.db.UserDAO;
 import com.planner.model.User;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.*;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import javafx.scene.layout.*;
+import javafx.stage.*;
+import javafx.geometry.*;
 import java.util.function.Consumer;
 
 public class UserAuthView {
-    private UserDAO userDAO;
-    private Consumer<User> onLoginSuccess;
+    private final UserDAO userDAO;
+    private final Consumer<User> onLoginSuccess;
 
     public UserAuthView(UserDAO userDAO, Consumer<User> onLoginSuccess) {
         this.userDAO = userDAO;
@@ -21,44 +21,47 @@ public class UserAuthView {
     public void show(Stage stage) {
         TextField usernameField = new TextField();
         usernameField.setPromptText("Username");
-
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Password");
-
         Button loginBtn = new Button("Login");
         Button registerBtn = new Button("Register");
-        Label statusLabel = new Label();
+        Label status = new Label();
 
         loginBtn.setOnAction(e -> {
             try {
-                var user = userDAO.loginUser(usernameField.getText(), passwordField.getText());
+                var user = userDAO.login(usernameField.getText(), passwordField.getText());
                 if (user.isPresent()) {
-                    statusLabel.setText("✅ Logged in!");
+                    status.setText("✅ Login success");
                     onLoginSuccess.accept(user.get());
                     stage.close();
                 } else {
-                    statusLabel.setText("❌ Wrong credentials");
+                    status.setText("❌ Invalid credentials");
                 }
             } catch (Exception ex) {
-                statusLabel.setText("Error: " + ex.getMessage());
+                status.setText("Error: " + ex.getMessage());
             }
         });
 
         registerBtn.setOnAction(e -> {
             try {
-                if (userDAO.registerUser(usernameField.getText(), passwordField.getText())) {
-                    statusLabel.setText("✅ Registered! You can now log in.");
+                if (userDAO.register(usernameField.getText(), passwordField.getText())) {
+                    status.setText("✅ Registered! Please login");
                 } else {
-                    statusLabel.setText("❌ Registration failed.");
+                    status.setText("❌ Registration failed");
                 }
             } catch (Exception ex) {
-                statusLabel.setText("Error: " + ex.getMessage());
+                status.setText("Error: " + ex.getMessage());
             }
         });
 
-        VBox layout = new VBox(10, usernameField, passwordField, loginBtn, registerBtn, statusLabel);
-        layout.setAlignment(Pos.CENTER);
-        stage.setScene(new Scene(layout, 300, 250));
+        VBox box = new VBox(10);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(20));
+        box.setPrefHeight(300); // Allign center
+        box.setPrefWidth(300);
+        box.getChildren().addAll(usernameField, passwordField, loginBtn, registerBtn, status);
+
+        stage.setScene(new Scene(box));
         stage.setTitle("Login/Register");
         stage.show();
     }

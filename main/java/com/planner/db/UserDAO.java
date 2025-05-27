@@ -11,7 +11,7 @@ public class UserDAO {
         this.conn = conn;
     }
 
-    public boolean registerUser(String username, String password) throws SQLException {
+    public boolean register(String username, String password) throws SQLException {
         String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
         PreparedStatement stmt = conn.prepareStatement(sql);
         stmt.setString(1, username);
@@ -19,7 +19,7 @@ public class UserDAO {
         return stmt.executeUpdate() > 0;
     }
 
-    public Optional<User> loginUser(String username, String password) throws SQLException {
+    public Optional<User> login(String username, String password) throws SQLException {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
         stmt.setString(1, username);
