@@ -10,7 +10,7 @@ public class TaskDAO {
     public TaskDAO(Connection conn) {
         this.conn = conn;
     }
-
+// Add new task
     public void addTask(Task task) {
         String sql = "INSERT INTO tasks (title, duration, user_id) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -22,7 +22,7 @@ public class TaskDAO {
             e.printStackTrace();
         }
     }
-
+// Show the task list
     public List<Task> getTasksByUserId(int userId) {
         List<Task> list = new ArrayList<>();
         String sql = "SELECT * FROM tasks WHERE user_id = ?";
@@ -44,7 +44,7 @@ public class TaskDAO {
         }
         return list;
     }
-
+// Detele task
     public void deleteTask(int taskId) {
         try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM tasks WHERE id = ?")) {
             stmt.setInt(1, taskId);
@@ -53,7 +53,7 @@ public class TaskDAO {
             e.printStackTrace();
         }
     }
-//    task done
+//    Tick task done
 public void setTaskDone(int taskId, boolean done) {
     String sql = "UPDATE tasks SET done = ? WHERE id = ?";
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {

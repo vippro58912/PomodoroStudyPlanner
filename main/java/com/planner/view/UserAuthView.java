@@ -33,7 +33,6 @@ public class UserAuthView {
                 if (user.isPresent()) {
                     status.setText("✅ Login success");
                     onLoginSuccess.accept(user.get());
-                    stage.close();
                 } else {
                     status.setText("❌ Invalid credentials");
                 }
@@ -41,7 +40,6 @@ public class UserAuthView {
                 status.setText("Error: " + ex.getMessage());
             }
         });
-
         registerBtn.setOnAction(e -> {
             try {
                 if (userDAO.register(usernameField.getText(), passwordField.getText())) {

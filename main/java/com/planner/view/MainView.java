@@ -4,7 +4,6 @@ import com.planner.model.Task;
 import com.planner.model.User;
 import com.planner.db.TaskDAO;
 import com.planner.util.OllamaClient;
-
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -27,6 +26,7 @@ public class MainView {
     private Label timerLabel;
     private int remainingSeconds;
     private int studyMinutes = 25;
+
 
     public MainView(Connection conn, User user) {
         this.conn = conn;
@@ -113,22 +113,44 @@ public class MainView {
         taskList.setAlignment(Pos.CENTER);
         refreshTaskList();
 
-        // AI Study Tips
-        Button tipButton = new Button("AI Study tips");
-        tipButton.setOnAction(e -> {
+        // AI Study Prompt
+        TextField promptField = new TextField();
+        promptField.setPromptText("Ask AI something...");
+        promptField.setMaxWidth(300);
+
+        Button askAIButton = new Button("Ask AI ✨");
+        //Put the AI event
+        askAIButton.setOnAction(e -> {
             try {
-                String tip = OllamaClient.getStudyTip();
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, tip);
-                alert.setTitle("Gợi ý học tập");
+                // Trim "space" then input the content
+                String prompt = promptField.getText().trim();
+                if (prompt.isEmpty()) {
+                    showAlert("Please enter a prompt.");
+                    return;
+                }
+    //                Send prompt to the AI
+                String response = OllamaClient.getResponseFromPrompt(prompt);
+                //Show the result area
+                TextArea area = new TextArea(response);
+                area.setWrapText(true);
+                area.setEditable(false);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.getDialogPane().setContent(area);
+
+                alert.setTitle("AI Response");
                 alert.setHeaderText(null);
                 alert.show();
             } catch (Exception ex) {
-                showAlert("Lỗi khi gọi AI: " + ex.getMessage());
+                showAlert("Error reaching AI: " + ex.getMessage());
             }
         });
+        HBox aiBox = new HBox(10, promptField, askAIButton);
+        aiBox.setAlignment(Pos.CENTER);
+
 
         // Combine layout
-        root.getChildren().addAll(title, subtitle, adjustBox, timerControl, taskList, inputBox, tipButton);
+        root.getChildren().addAll(title, subtitle, adjustBox, timerControl, taskList, inputBox, aiBox);
+
     }
 
     private void updateTimerLabel() {
