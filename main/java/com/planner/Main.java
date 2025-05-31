@@ -24,6 +24,13 @@ public class Main extends Application {
                     + "username TEXT UNIQUE NOT NULL, "
                     + "password TEXT NOT NULL)");
         }
+        // Create complete_at table
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT");
+        } catch (SQLException e) {
+            System.out.println("Column 'completed_at' is existed or error: " + e.getMessage());
+        }
+
         // Tick task done
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE tasks ADD COLUMN done INTEGER DEFAULT 0");

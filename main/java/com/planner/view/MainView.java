@@ -12,9 +12,14 @@ import javafx.stage.Stage;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
-
+import com.planner.model.User;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
+
+import com.planner.db.TaskDAO;
+import com.planner.CurrentUser;
+import com.planner.view.ProgressChart;
 
 public class MainView {
     private final VBox root = new VBox(20);
@@ -66,6 +71,7 @@ public class MainView {
         HBox adjustBox = new HBox(10, minusBtn, timerLabel, plusBtn);
         adjustBox.setAlignment(Pos.CENTER);
 
+
         // Timer controls
         Button start = new Button("Start");
         Button stop = new Button("Stop");
@@ -76,6 +82,19 @@ public class MainView {
         reset.setOnAction(e -> resetTimer());
 
         HBox timerControl = new HBox(10, start, stop, reset);
+        Button progressBtn = new Button("📊 Progress");
+        progressBtn.setOnAction(e -> {
+            try {
+                TaskDAO dao = new TaskDAO(conn);
+                Map<String, Integer> stats = dao.getWeeklyCompletionStats(CurrentUser.get().getId());
+                ProgressChart.showChart(stats);
+
+            } catch (Exception ex) {
+                showAlert("Error loading progress: " + ex.getMessage());
+            }
+        });
+        timerControl.getChildren().add(progressBtn);
+
         timerControl.setAlignment(Pos.CENTER);
 
         // Task input
