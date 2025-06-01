@@ -34,10 +34,12 @@ jobs:
               -d out $(find main -name "*.java")
 
     - name: Compile test code
-      run: |
-        javac --module-path javafx/lib --add-modules javafx.controls \
-              -cp "out:lib/sqlite-jdbc-3.42.0.0.jar" \
-              -d out $(find test -name "*.java")
+  run: |
+    curl -O https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
+    javac --module-path javafx/lib --add-modules javafx.controls \
+          -cp "out:lib/sqlite-jdbc-3.42.0.0.jar:junit-platform-console-standalone-1.10.0.jar" \
+          -d out $(find test -name "*.java")
+
 
     - name: Run unit tests
       run: |
