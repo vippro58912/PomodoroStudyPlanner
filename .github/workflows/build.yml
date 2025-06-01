@@ -20,13 +20,13 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
-    - name: Compile source and test code
+    - name: Compile source and test files
       run: |
         mkdir -p out
-        javac -cp ".:lib/sqlite-jdbc-3.42.0.0.jar" -d out $(find src -name "*.java")
+        javac -cp ".:lib/sqlite-jdbc-3.42.0.0.jar" -d out $(find main -name "*.java")
         javac -cp ".:out:lib/sqlite-jdbc-3.42.0.0.jar" -d out $(find test -name "*.java")
 
-    - name: Run unit tests with ConsoleLauncher
+    - name: Run unit tests
       run: |
         curl -O https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
         java -jar junit-platform-console-standalone-1.10.0.jar \
