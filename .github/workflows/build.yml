@@ -1,4 +1,4 @@
-name: Java CI with JUnit 5
+name: Java CI with JavaFX and JUnit 5
 
 on:
   push:
@@ -20,15 +20,29 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
-    - name: Compile source and test files
+    - name: Download JavaFX SDK
+      run: |
+        curl -L -o javafx.zip https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-sdk.zip
+        unzip javafx.zip
+        mv javafx-sdk-21.0.1 javafx
+
+    - name: Compile Java source code
       run: |
         mkdir -p out
-        javac -cp ".:lib/sqlite-jdbc-3.42.0.0.jar" -d out $(find main -name "*.java")
-        javac -cp ".:out:lib/sqlite-jdbc-3.42.0.0.jar" -d out $(find test -name "*.java")
+        javac --module-path javafx/lib --add-modules javafx.controls,javafx.fxml \
+              -cp "lib/sqlite-jdbc-3.42.0.0.jar" \
+              -d out $(find main -name "*.java")
+
+    - name: Compile test code
+      run: |
+        javac --module-path javafx/lib --add-modules javafx.controls \
+              -cp "out:lib/sqlite-jdbc-3.42.0.0.jar" \
+              -d out $(find test -name "*.java")
 
     - name: Run unit tests
       run: |
         curl -O https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
-        java -jar junit-platform-console-standalone-1.10.0.jar \
-          --class-path out:lib/sqlite-jdbc-3.42.0.0.jar \
-          --scan-class-path
+        java --module-path javafx/lib --add-modules javafx.controls \
+             -jar junit-platform-console-standalone-1.10.0.jar \
+             --class-path out:lib/sqlite-jdbc-3.42.0.0.jar \
+             --scan-class-path
